@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chepito Control - Despacho de Materiales</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--p:#c0392b;--pd:#96281b;--s:#e67e22;--bg:#fdf6ec;--sur:#fff;--tx:#2c3e50;--txl:#7f8c8d;--br:#e0d5c5;--ok:#27ae60;--wa:#f39c12;--er:#e74c3c;--inf:#3498db}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+/* AUTH */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--p),var(--s))}
+.auth-card{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.auth-logo{text-align:center;margin-bottom:28px}
+.auth-logo .ico{font-size:52px}
+.auth-logo h1{font-size:22px;color:var(--p);margin-top:8px}
+.auth-logo p{color:var(--txl);font-size:13px}
+/* FORMS */
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:12px;font-weight:700;color:var(--tx);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.fg input,.fg select,.fg textarea{width:100%;padding:10px 13px;border:2px solid var(--br);border-radius:8px;font-size:14px;transition:border-color .2s;background:#fff;color:var(--tx);font-family:inherit}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--p)}
+.fg textarea{resize:vertical;min-height:75px}
+/* BUTTONS */
+.btn{padding:9px 18px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:5px;font-family:inherit}
+.bp{background:var(--p);color:#fff}.bp:hover{background:var(--pd);transform:translateY(-1px)}
+.bs{background:var(--s);color:#fff}.bs:hover{background:#d35400}
+.bok{background:var(--ok);color:#fff}.bok:hover{background:#219a52}
+.ber{background:var(--er);color:#fff}.ber:hover{background:#c0392b}
+.bg{background:transparent;color:var(--tx);border:2px solid var(--br)}.bg:hover{border-color:var(--p);color:var(--p)}
+.bsm{padding:5px 10px;font-size:12px}
+.bfull{width:100%;justify-content:center}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none!important}
+/* LAYOUT */
+.app-wrap{display:flex;min-height:100vh}
+/* SIDEBAR */
+.sidebar{width:238px;background:#fff;border-right:1px solid var(--br);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
+.sb-head{padding:18px 20px;background:var(--p);color:#fff}
+.sb-head h2{font-size:15px}.sb-head p{font-size:11px;opacity:.8;margin-top:2px}
+.sb-user{padding:14px 18px;border-bottom:1px solid var(--br);display:flex;align-items:center;gap:10px}
+.uav{width:34px;height:34px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.uinfo p{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.uinfo span{font-size:11px;color:var(--txl)}
+.sb-nav{flex:1;padding:10px 0;overflow-y:auto}
+.ni{display:flex;align-items:center;gap:9px;padding:10px 18px;cursor:pointer;font-size:13px;color:var(--tx);border:none;background:none;width:100%;text-align:left;transition:all .2s}
+.ni:hover{background:var(--bg);color:var(--p)}
+.ni.active{background:#fdecea;color:var(--p);font-weight:600;border-right:3px solid var(--p)}
+.ni-ic{font-size:16px;width:22px;text-align:center}
+.sb-foot{padding:14px 18px;border-top:1px solid var(--br)}
+/* MAIN */
+.main{margin-left:238px;flex:1;padding:22px;min-height:100vh}
+/* PAGE */
+.ph{margin-bottom:20px}.ph h2{font-size:20px}.ph p{color:var(--txl);font-size:13px;margin-top:3px}
+.pha{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+/* CARD */
+.card{background:#fff;border-radius:12px;padding:18px;border:1px solid var(--br);box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.ct{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+/* STATS */
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+.sc{background:#fff;border-radius:12px;padding:18px;border:1px solid var(--br);display:flex;align-items:center;gap:14px}
+.si{width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.si.r{background:#fdecea}.si.o{background:#fef3e2}.si.g{background:#eafaf1}.si.b{background:#eaf4fb}
+.sv{font-size:22px;font-weight:700}.sl{font-size:11px;color:var(--txl);margin-top:2px}
+/* TABLE */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:9px 12px;text-align:left;font-weight:600;font-size:11px;color:var(--txl);text-transform:uppercase;background:var(--bg);border-bottom:2px solid var(--br)}
+td{padding:11px 12px;border-bottom:1px solid var(--br)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fdf9f5}
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.bp2{background:#fef3e2;color:#e67e22}.bt{background:#eaf4fb;color:#3498db}
+.br2{background:#eafaf1;color:#27ae60}.ba{background:#fdedec;color:#e74c3c}
+/* LOC PILL */
+.lp{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.lb{background:#fdecea;color:var(--p)}.l1{background:#fef3e2;color:var(--s)}.l2{background:#eaf4fb;color:var(--inf)}.lt{background:#f0e6ff;color:#8e44ad}
+/* MODAL */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px}
+.md{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;box-shadow:0 25px 80px rgba(0,0,0,.3)}
+.mdl{max-width:720px}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.mh h3{font-size:17px}.mc{background:none;border:none;font-size:22px;cursor:pointer;color:var(--txl);line-height:1}
+.mc:hover{color:var(--tx)}.mf{display:flex;justify-content:flex-end;gap:9px;margin-top:18px;padding-top:14px;border-top:1px solid var(--br)}
+/* ALERT */
+.alert{padding:11px 14px;border-radius:8px;font-size:13px;margin-bottom:14px}
+.ae{background:#fdedec;color:#c0392b;border:1px solid #f5b7b1}
+.as{background:#eafaf1;color:#1e8449;border:1px solid #a9dfbf}
+.ai{background:#eaf4fb;color:#1a5276;border:1px solid #a9cce3}
+/* LOADING */
+.ld{text-align:center;padding:40px;color:var(--txl)}
+.sp{display:inline-block;width:30px;height:30px;border:3px solid var(--br);border-top-color:var(--p);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* EMPTY */
+.es{text-align:center;padding:44px 20px;color:var(--txl)}
+.es .ic{font-size:44px;margin-bottom:10px}.es h3{font-size:15px;color:var(--tx);margin-bottom:5px}
+/* TOAST */
+.tc{position:fixed;top:18px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:7px}
+.toast{background:#2c3e50;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;max-width:300px;display:flex;align-items:center;gap:7px;animation:sli .3s ease;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.toast.ok{background:var(--ok)}.toast.er{background:var(--er)}.toast.inf{background:var(--inf)}
+@keyframes sli{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+/* FILTER */
+.fb{display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap}
+.fb input,.fb select{padding:7px 11px;border:1px solid var(--br);border-radius:8px;font-size:13px;background:#fff}
+.fb input:focus,.fb select:focus{outline:none;border-color:var(--p)}
+/* DETAIL */
+.dr{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--br);font-size:13px}
+.dr:last-child{border-bottom:none}.dlb{color:var(--txl)}.dvl{font-weight:500}
+/* INV GRID */
+.ig{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.ic2{background:#fff;border-radius:12px;border:1px solid var(--br);overflow:hidden}
+.ich{padding:13px 15px;background:var(--bg);border-bottom:1px solid var(--br)}
+.ich h4{font-size:13px;font-weight:600}.ich span{font-size:11px;color:var(--txl)}
+.ii{display:flex;justify-content:space-between;align-items:center;padding:9px 15px;border-bottom:1px solid var(--br)}
+.ii:last-child{border-bottom:none}.iin{font-size:13px}.iiu{font-size:11px;color:var(--txl)}
+.iq{font-size:15px;font-weight:700;color:var(--p)}
+/* ITEMS TABLE */
+.it{width:100%;border-collapse:collapse;font-size:13px}
+.it th{background:var(--bg);padding:7px 9px;text-align:left;font-weight:600;font-size:11px;color:var(--txl);text-transform:uppercase}
+.it td{padding:7px 9px;border-bottom:1px solid var(--br)}
+.it input{width:100%;padding:4px 7px;border:1px solid var(--br);border-radius:6px;font-size:13px}
+.it input:focus{outline:none;border-color:var(--p)}
+/* SQL */
+.sqlb{background:#2c3e50;color:#ecf0f1;padding:14px;border-radius:8px;font-family:monospace;font-size:11px;overflow-x:auto;white-space:pre;line-height:1.6;max-height:280px;overflow-y:auto}
+/* ── MOBILE HEADER ── */
+.mob-header{display:none;position:fixed;top:0;left:0;right:0;height:54px;background:var(--p);color:#fff;z-index:300;align-items:center;justify-content:space-between;padding:0 16px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.mob-header .mh-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px}
+.mob-header .mh-user{font-size:12px;opacity:.85;display:flex;align-items:center;gap:8px}
+.mob-header .mh-out{background:rgba(255,255,255,.2);border:none;color:#fff;padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* ── BOTTOM NAV ── */
+.bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid var(--br);z-index:300;flex-direction:row;box-shadow:0 -3px 16px rgba(0,0,0,.1)}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 2px 10px;border:none;background:none;cursor:pointer;color:var(--txl);font-size:9px;font-weight:500;gap:3px;min-width:0;transition:color .15s;-webkit-tap-highlight-color:transparent;font-family:inherit}
+.bn-ic{font-size:24px;line-height:1;transition:transform .15s}
+.bn-item span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;padding:0 2px}
+.bn-item.active{color:var(--p)}.bn-item.active .bn-ic{transform:scale(1.15)}
+@media(max-width:768px){
+  /* ── Base ── */
+  html,body{overflow-x:hidden;max-width:100%}
+
+  /* ── Nav ── */
+  .sidebar{display:none}
+  .mob-header{display:flex}
+  .bot-nav{display:flex}
+
+  /* ── Layout principal ── */
+  .main{margin-left:0;padding:66px 12px 82px;min-width:0;overflow-x:hidden}
+
+  /* ── Grids con inline style generados por JS ── */
+  #main [style*="grid-template-columns"],
+  .mo  [style*="grid-template-columns"]{grid-template-columns:1fr!important}
+
+  /* ── Stats: mantener 2 columnas ── */
+  .sg{grid-template-columns:1fr 1fr!important}
+
+  /* ── Inventario: tarjetas completas ── */
+  .ig{grid-template-columns:1fr}
+
+  /* ── Cabeceras de página ── */
+  .pha{flex-direction:column;gap:10px}
+  .pha>div:last-child{display:flex;flex-wrap:wrap;gap:7px}
+  .ph h2{font-size:17px}
+
+  /* ── Tarjetas ── */
+  .card{padding:14px}
+
+  /* ── Tablas: scroll horizontal cuando no entran ── */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{font-size:12px}
+  th,td{padding:7px 8px}
+  td[style*="white-space:nowrap"]{white-space:normal!important}
+
+  /* ── Items table: inputs más pequeños ── */
+  .it input{width:60px!important;padding:3px 5px!important}
+
+  /* ── Filtros ── */
+  .fb{flex-wrap:wrap}
+  .fb input,.fb select{flex:1 1 calc(50% - 5px);min-width:120px;font-size:13px}
+
+  /* ── Modales: ancho completo desde abajo ── */
+  .mo{padding:0;align-items:flex-end}
+  .md{border-radius:16px 16px 0 0;padding:20px 16px;width:100%;max-width:100%!important;max-height:88vh}
+  .mf{flex-wrap:wrap;gap:8px}
+  .mf .btn{flex:1 1 auto;justify-content:center;min-width:100px}
+
+  /* ── Formularios: evitar zoom en iOS ── */
+  .fg input,.fg select,.fg textarea{font-size:16px}
+
+  /* ── Auth card en pantallas muy pequeñas ── */
+  .auth-card{padding:28px 20px;border-radius:12px}
+
+  /* ── Flex rows con stats del historial por material ── */
+  #main [style*="cursor:pointer"] [style*="display:flex"][style*="gap:20px"]{flex-wrap:wrap!important;gap:8px!important;justify-content:flex-start!important}
+
+  /* ── Toasts ── */
+  .tc{top:auto;bottom:90px;right:10px;left:10px}
+  .toast{max-width:100%}
+
+  /* ── Pestañas del historial ── */
+  #main [style*="border-bottom:2px solid"]{overflow-x:auto;flex-wrap:nowrap}
+}
+</style>
+</head>
+<body>
+<div class="tc" id="tc"></div>
+
+<!-- CONFIG SCREEN -->
+<div id="sConfig" style="display:none">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo"><div class="ico">🍞</div><h1>Chepito Control</h1><p>Sistema de Despacho de Materiales</p></div>
+      <div class="alert ai">Ingresa los datos de tu proyecto Supabase para comenzar.</div>
+      <div class="fg"><label>URL del proyecto Supabase</label><input id="cfgU" type="url" placeholder="https://xxxx.supabase.co"></div>
+      <div class="fg"><label>Anon Key</label><input id="cfgK" type="text" placeholder="eyJhbGciOiJIUzI1NiIs..."></div>
+      <button class="btn bp bfull" onclick="saveConfig()">Conectar</button>
+      <div style="text-align:center;margin-top:12px">
+        <button class="btn bg bsm" onclick="showSQL()">📋 Ver instrucciones SQL</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="sLogin" style="display:none">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo"><div class="ico">🍞</div><h1>Chepito Control</h1><p>Sistema de Despacho de Materiales</p></div>
+      <div id="loginErr"></div>
+      <div class="fg"><label>Usuario</label><input id="lUser" type="text" placeholder="Ej: cris" onkeydown="if(event.key==='Enter'){event.preventDefault();$('lPass').focus()}" autocomplete="username"></div>
+      <div class="fg"><label>Contraseña</label><input id="lPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter'){event.preventDefault();login()}" autocomplete="current-password"></div>
+      <button class="btn bp bfull" id="btnLogin" onclick="login()">Iniciar Sesión</button>
+    </div>
+  </div>
+</div>
+
+<!-- SELECCIÓN DE PUNTO -->
+<div id="sSelPunto" style="display:none">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo"><div class="ico">🍞</div><h1>Chepito Control</h1><p>Selección de turno</p></div>
+      <p style="text-align:center;margin-bottom:22px;font-size:15px;font-weight:600;color:var(--tx)">¿En cuál punto de venta estás hoy?</p>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <button class="btn bs bfull" style="padding:20px;font-size:16px" onclick="elegirPunto('punto_venta_1')">🏪 Panadería 1</button>
+        <button class="btn bp bfull" style="padding:20px;font-size:16px" onclick="elegirPunto('punto_venta_2')">🏪 Panadería 2</button>
+        <button class="btn bfull" style="padding:20px;font-size:16px;background:#8e44ad;color:#fff" onclick="elegirPunto('taller')">🔧 Taller</button>
+      </div>
+      <button class="btn bg bfull" style="margin-top:14px;font-size:12px" onclick="logout()">← Salir</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="sApp" style="display:none">
+  <!-- Header móvil (solo visible en pantallas pequeñas) -->
+  <header class="mob-header">
+    <div class="mh-title">🍞 <span>Chepito Control</span></div>
+    <div class="mh-user">
+      <span id="mobUserName">Usuario</span>
+      <button class="mh-out" onclick="logout()">Salir</button>
+    </div>
+  </header>
+
+  <div class="app-wrap">
+    <nav class="sidebar">
+      <div class="sb-head"><h2>🍞 Chepito Control</h2><p>Control de Despachos</p></div>
+      <div class="sb-user">
+        <div class="uav" id="uAv">?</div>
+        <div class="uinfo"><p id="uName">Usuario</p><span id="uRole">-</span></div>
+      </div>
+      <div class="sb-nav" id="sbNav"></div>
+      <div class="sb-foot"><button class="btn bg bsm bfull" onclick="logout()">🚪 Salir</button></div>
+    </nav>
+    <main class="main" id="main"><div class="ld"><div class="sp"></div></div></main>
+  </div>
+
+  <!-- Barra de navegación inferior (solo visible en móvil) -->
+  <nav class="bot-nav" id="botNav"></nav>
+</div>
+
+<div id="MC"></div>
+
+<script>
+// ─── ENTER GLOBAL ────────────────────────────────────────
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter')return;
+  const tag=(document.activeElement||{}).tagName;
+  if(tag==='TEXTAREA'||tag==='BUTTON'||tag==='SELECT')return;
+  const modal=document.querySelector('#MC .mo');
+  if(modal){
+    e.preventDefault();
+    const btn=modal.querySelector('.btn.bp:not(:disabled),.btn.bok:not(:disabled),.btn.bs:not(:disabled)');
+    if(btn)btn.click();
+  }
+});
+
+// ─── STATE ───────────────────────────────────────────────
+let sb=null,cUser=null,cProf=null,cView='dashboard',cSesionRol=null,_puntoTemp=null;
+const SB_URL='https://blwfslqyzhcfdpkjkalt.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsd2ZzbHF5emhjZmRwa2prYWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NDE2MTYsImV4cCI6MjA5MzMxNzYxNn0.eU2_ANBi70nC1raL3UddbIMLBfdT88-gqNx19vzwAis';
+
+// ─── CONFIG ──────────────────────────────────────────────
+function initSB(){sb=window.supabase.createClient(SB_URL,SB_KEY)}
+
+// ─── UI HELPERS ───────────────────────────────────────────
+function show(id){document.getElementById(id).style.display=''}
+function hide(id){document.getElementById(id).style.display='none'}
+function $(id){return document.getElementById(id)}
+
+function toast(msg,type='inf',ms=3500){
+  const c=$('tc'),t=document.createElement('div');
+  t.className=`toast ${type}`;
+  const ic={ok:'✓',er:'✗',inf:'ℹ'};
+  t.innerHTML=`<span>${ic[type]||'ℹ'}</span><span>${esc(msg)}</span>`;
+  c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},ms);
+}
+
+function openModal(html){$('MC').innerHTML=`<div class="mo" onclick="if(event.target===this)closeModal()">${html}</div>`}
+function closeModal(){$('MC').innerHTML=''}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// ─── AUTH ────────────────────────────────────────────────
+function toEmail(u){
+  return u.trim().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')
+    +'@pancontrol.local';
+}
+
+async function login(){
+  const usuario=$('lUser').value.trim(),pass=$('lPass').value;
+  if(!usuario||!pass){loginErr('Completa todos los campos');return}
+  const btn=$('btnLogin');btn.disabled=true;btn.textContent='Ingresando...';
+  const {data,error}=await sb.auth.signInWithPassword({email:toEmail(usuario),password:pass});
+  btn.disabled=false;btn.textContent='Iniciar Sesión';
+  if(error){loginErr(error.message+' | email usado: '+toEmail(usuario));return}
+  cUser=data.user;
+  await loadProfile();
+  if(cProf.rol!=='bodega'){
+    hide('sLogin');show('sSelPunto');
+  } else {
+    showApp();
+  }
+}
+function loginErr(m){$('loginErr').innerHTML=`<div class="alert ae">${esc(m)}</div>`}
+
+async function logout(){
+  await sb.auth.signOut();
+  cUser=null;cProf=null;cSesionRol=null;_puntoTemp=null;
+  hide('sApp');hide('sSelPunto');show('sLogin');
+  $('lUser').value='';$('lPass').value='';$('loginErr').innerHTML='';
+}
+
+function elegirPunto(p){
+  _puntoTemp=p;
+  const nombre=p==='punto_venta_1'?'Panadería 1':p==='punto_venta_2'?'Panadería 2':'Taller';
+  openModal(`<div class="md">
+    <div class="mh"><h3>Confirmar ubicación</h3><button class="mc" onclick="closeModal()">×</button></div>
+    <p style="margin:4px 0 20px;font-size:15px">¿Confirmás que estás en <strong>${nombre}</strong>?</p>
+    <div class="mf">
+      <button class="btn bg" onclick="closeModal()">Cancelar</button>
+      <button class="btn bp" onclick="confirmarPunto()">Confirmar</button>
+    </div>
+  </div>`);
+}
+
+function confirmarPunto(){
+  cSesionRol=_puntoTemp;
+  closeModal();
+  hide('sSelPunto');
+  showApp();
+}
+
+async function loadProfile(){
+  const {data}=await sb.from('profiles').select('*').eq('id',cUser.id).single();
+  if(!data){
+    const rol=prompt('Rol (bodega / punto_venta_1 / punto_venta_2 / taller):','bodega');
+    const nombre=prompt('Nombre:','Administrador');
+    await sb.from('profiles').insert({id:cUser.id,nombre,rol});
+    cProf={id:cUser.id,nombre,rol};
+  } else {cProf=data}
+}
+
+// ─── APP SHELL ────────────────────────────────────────────
+const RLAB={bodega:'Bodega Central',punto_venta_1:'Punto de Venta 1',punto_venta_2:'Punto de Venta 2',taller:'Taller'};
+const LCLASS={bodega:'lb',punto_venta_1:'l1',punto_venta_2:'l2',taller:'lt'};
+
+function rLab(r){return RLAB[r]||r}
+function lPill(l){return `<span class="lp ${LCLASS[l]||''}">${rLab(l)}</span>`}
+function eRol(){return cSesionRol||cProf.rol}
+
+function showApp(){
+  hide('sLogin');show('sApp');
+  $('uAv').textContent=(cProf.nombre||'U')[0].toUpperCase();
+  $('uName').textContent=cProf.nombre||'Usuario';
+  $('uRole').textContent=rLab(eRol());
+  $('mobUserName').textContent=cProf.nombre||'Usuario';
+  buildNav();
+  const inicio=NAVS.find(n=>n.roles.includes(cProf.rol));
+  nav(inicio?inicio.id:'dashboard');
+}
+
+const NAVS=[
+  {id:'dashboard',ic:'📊',lb:'Dashboard',roles:['bodega','taller']},
+  {id:'inventario',ic:'📦',lb:'Inventario',roles:['bodega','taller']},
+  {id:'despachos',ic:'🚚',lb:'Pedidos',roles:['bodega','punto_venta_1','punto_venta_2','taller']},
+  {id:'nuevo',ic:'➕',lb:'Nuevo Pedido',roles:['punto_venta_1','punto_venta_2','taller']},
+  {id:'reporte',ic:'📈',lb:'Historial',roles:['bodega']},
+  {id:'materiales',ic:'🧾',lb:'Materiales',roles:['bodega']},
+  {id:'usuarios',ic:'👥',lb:'Usuarios',roles:['bodega']},
+];
+
+function buildNav(){
+  const items=NAVS.filter(n=>n.roles.includes(cProf.rol));
+  $('sbNav').innerHTML=items.map(n=>`<button class="ni" id="n-${n.id}" onclick="nav('${n.id}')"><span class="ni-ic">${n.ic}</span><span>${n.lb}</span></button>`).join('');
+  $('botNav').innerHTML=items.map(n=>`<button class="bn-item" id="bn-${n.id}" onclick="nav('${n.id}')"><span class="bn-ic">${n.ic}</span><span>${n.lb}</span></button>`).join('');
+}
+
+const VIEWS={dashboard:vDashboard,inventario:vInventario,despachos:vDespachos,nuevo:vNuevo,reporte:vReporte,materiales:vMateriales,usuarios:vUsuarios};
+
+function nav(v){
+  cView=v;
+  document.querySelectorAll('.ni').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.bn-item').forEach(e=>e.classList.remove('active'));
+  const el=$('n-'+v);if(el)el.classList.add('active');
+  const bn=$('bn-'+v);if(bn)bn.classList.add('active');
+  $('main').innerHTML='<div class="ld"><div class="sp"></div></div>';
+  if(VIEWS[v])VIEWS[v]();
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────
+async function vDashboard(){
+  const [r1,r2,r3]=await Promise.all([
+    sb.from('materiales').select('id',{count:'exact'}).eq('activo',true),
+    sb.from('despachos').select('id',{count:'exact'}),
+    sb.from('despachos').select('id',{count:'exact'}).eq('estado','pendiente'),
+  ]);
+  const {data:rd}=await sb.from('despachos')
+    .select('*,cp:profiles!despachos_creado_por_fkey(nombre)')
+    .order('created_at',{ascending:false}).limit(6);
+
+  const tm=r1.count||0,td=r2.count||0,tp=r3.count||0;
+
+  $('main').innerHTML=`
+  <div class="ph"><h2>Dashboard</h2><p>Bienvenido, ${esc(cProf.nombre)} · ${esc(rLab(cProf.rol))}</p></div>
+  <div class="sg">
+    <div class="sc"><div class="si o">📦</div><div><div class="sv">${tm}</div><div class="sl">Materiales activos</div></div></div>
+    <div class="sc"><div class="si b">🚚</div><div><div class="sv">${td}</div><div class="sl">Despachos totales</div></div></div>
+    <div class="sc"><div class="si r">⏳</div><div><div class="sv">${tp}</div><div class="sl">Pendientes</div></div></div>
+    <div class="sc"><div class="si g">✅</div><div><div class="sv">${td-tp}</div><div class="sl">Procesados</div></div></div>
+  </div>
+  <div class="card">
+    <div class="ct">🚚 Despachos recientes</div>
+    ${rd&&rd.length?`<div class="tw"><table>
+      <thead><tr><th>Número</th><th>Ruta</th><th>Estado</th><th>Fecha</th><th>Por</th></tr></thead>
+      <tbody>${rd.map(d=>`<tr>
+        <td><strong>${esc(d.numero)}</strong></td>
+        <td>${lPill(d.origen)} → ${lPill(d.destino)}</td>
+        <td>${stBadge(d.estado)}</td>
+        <td>${fDate(d.created_at)}</td>
+        <td>${esc(d.cp?.nombre||'-')}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`:emptyState('📭','Sin despachos aún')}
+  </div>`;
+}
+
+// ─── MATERIALES ───────────────────────────────────────────
+async function vMateriales(){
+  const {data:mats}=await sb.from('materiales').select('*').order('nombre');
+  $('main').innerHTML=`
+  <div class="pha">
+    <div class="ph"><h2>Materiales</h2><p>Catálogo de materiales</p></div>
+    <button class="btn bp" onclick="openMatModal()">+ Nuevo</button>
+  </div>
+  <div class="card">
+    ${mats&&mats.length?`<div class="tw"><table>
+      <thead><tr><th>Nombre</th><th>Unidad</th><th>Descripción</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>${mats.map(m=>`<tr>
+        <td><strong>${esc(m.nombre)}</strong></td>
+        <td>${esc(m.unidad)}</td>
+        <td>${esc(m.descripcion||'-')}</td>
+        <td><span class="badge ${m.activo?'br2':'ba'}">${m.activo?'Activo':'Inactivo'}</span></td>
+        <td style="white-space:nowrap">
+          <button class="btn bg bsm" onclick="openMatModal(decodeURIComponent('${encodeURIComponent(JSON.stringify(m))}'))">✏️</button>
+          <button class="btn bg bsm" onclick="toggleMat('${m.id}',${m.activo})">${m.activo?'🚫':'✅'}</button>
+        </td>
+      </tr>`).join('')}</tbody>
+    </table></div>`:emptyState('🧾','No hay materiales','Crea el primero')}
+  </div>`;
+}
+
+function openMatModal(jsonStr=null){
+  const m=jsonStr?JSON.parse(jsonStr):null;
+  const units=['kg','g','lb','L','mL','unidad','saco','caja','docena','paquete'];
+  const esCustom=m&&!units.includes(m.unidad);
+  openModal(`<div class="md">
+    <div class="mh"><h3>${m?'Editar':'Nuevo'} Material</h3><button class="mc" onclick="closeModal()">×</button></div>
+    <div class="fg"><label>Nombre *</label><input id="mNom" value="${esc(m?.nombre||'')}"></div>
+    <div class="fg"><label>Unidad *</label>
+      <select id="mUni" onchange="toggleUniCustom()">
+        ${units.map(u=>`<option ${(!esCustom&&m?.unidad===u)?'selected':''}>${u}</option>`).join('')}
+        <option value="__nueva__" ${esCustom?'selected':''}>+ Nueva unidad...</option>
+      </select>
+    </div>
+    <div class="fg" id="fgUniCustom" style="${esCustom?'':'display:none'}">
+      <label>Nueva unidad *</label>
+      <input id="mUniCustom" value="${esCustom?esc(m.unidad):''}" placeholder="Ej: rollo, metro, atado...">
+    </div>
+    <div class="fg"><label>Descripción</label><textarea id="mDes">${esc(m?.descripcion||'')}</textarea></div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeModal()">Cancelar</button>
+      <button class="btn bp" onclick="saveMat('${m?.id||''}')">Guardar</button>
+    </div>
+  </div>`);
+}
+
+function toggleUniCustom(){
+  const custom=$('mUni').value==='__nueva__';
+  $('fgUniCustom').style.display=custom?'':'none';
+  if(custom)$('mUniCustom').focus();
+}
+
+async function saveMat(id){
+  const nombre=$('mNom').value.trim(),descripcion=$('mDes').value.trim();
+  const unidad=$('mUni').value==='__nueva__'?($('mUniCustom').value.trim()):$('mUni').value;
+  if(!nombre){toast('Nombre requerido','er');return}
+  if(!unidad){toast('Ingresá la nueva unidad','er');$('mUniCustom')?.focus();return}
+  const d={nombre,unidad,descripcion:descripcion||null};
+  let err;
+  if(id){({error:err}=await sb.from('materiales').update(d).eq('id',id))}
+  else{
+    const {data:nm,error:e}=await sb.from('materiales').insert(d).select().single();
+    err=e;
+    if(!e&&nm){
+      await sb.from('inventario').insert([
+        {material_id:nm.id,ubicacion:'bodega',cantidad:0},
+        {material_id:nm.id,ubicacion:'punto_venta_1',cantidad:0},
+        {material_id:nm.id,ubicacion:'punto_venta_2',cantidad:0},
+        {material_id:nm.id,ubicacion:'taller',cantidad:0},
+      ]);
+    }
+  }
+  if(err){toast('Error: '+err.message,'er');return}
+  toast(id?'Material actualizado':'Material creado','ok');
+  closeModal();vMateriales();
+}
+
+async function toggleMat(id,activo){
+  await sb.from('materiales').update({activo:!activo}).eq('id',id);
+  toast(`Material ${!activo?'activado':'desactivado'}`,'ok');vMateriales();
+}
+
+// ─── INVENTARIO ───────────────────────────────────────────
+async function vInventario(){
+  const {data:inv}=await sb.from('inventario')
+    .select('*,m:materiales(nombre,unidad,activo)')
+    .order('ubicacion');
+
+  const byL={};
+  (inv||[]).forEach(i=>{if(!i.m?.activo)return;(byL[i.ubicacion]=byL[i.ubicacion]||[]).push(i)});
+  const locs=['bodega','punto_venta_1','punto_venta_2','taller'];
+
+  $('main').innerHTML=`
+  <div class="pha">
+    <div class="ph"><h2>Inventario</h2><p>Stock actual por ubicación</p></div>
+    ${cProf.rol==='bodega'?`<button class="btn bs" onclick="openAdjModal()">📝 Ajuste</button>`:''}
+  </div>
+  <div class="ig">${locs.map(loc=>`
+    <div class="ic2">
+      <div class="ich"><h4>${rLab(loc)}</h4><span>${(byL[loc]||[]).length} materiales</span></div>
+      ${(byL[loc]||[]).length
+        ?(byL[loc]||[]).sort((a,b)=>a.m.nombre.localeCompare(b.m.nombre)).map(item=>`
+          <div class="ii">
+            <div><div class="iin">${esc(item.m.nombre)}</div><div class="iiu">${esc(item.m.unidad)}</div></div>
+            <div class="iq">${parseFloat(item.cantidad).toFixed(2)}</div>
+          </div>`).join('')
+        :`<div style="padding:18px;text-align:center;color:var(--txl);font-size:12px">Sin stock</div>`
+      }
+    </div>`).join('')}
+  </div>`;
+}
+
+async function openAdjModal(){
+  const {data:mats}=await sb.from('materiales').select('*').eq('activo',true).order('nombre');
+  openModal(`<div class="md">
+    <div class="mh"><h3>Ajuste de Inventario</h3><button class="mc" onclick="closeModal()">×</button></div>
+    <div class="fg"><label>Ubicación</label>
+      <select id="aUbi">
+        <option value="bodega">Bodega Central</option>
+        <option value="punto_venta_1">Punto de Venta 1</option>
+        <option value="punto_venta_2">Punto de Venta 2</option>
+        <option value="taller">Taller</option>
+      </select>
+    </div>
+    <div class="fg"><label>Material</label>
+      <select id="aMat">${(mats||[]).map(m=>`<option value="${m.id}">${esc(m.nombre)} (${m.unidad})</option>`).join('')}</select>
+    </div>
+    <div class="fg"><label>Cantidad nueva</label><input id="aCant" type="number" min="0" step="0.01" placeholder="0.00"></div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeModal()">Cancelar</button>
+      <button class="btn bp" onclick="saveAdj()">Guardar</button>
+    </div>
+  </div>`);
+}
+
+async function saveAdj(){
+  const ubicacion=$('aUbi').value,material_id=$('aMat').value;
+  const cantidad=parseFloat($('aCant').value);
+  if(isNaN(cantidad)||cantidad<0){toast('Cantidad inválida','er');return}
+  const {error}=await sb.from('inventario').upsert(
+    {material_id,ubicacion,cantidad,updated_at:new Date().toISOString()},
+    {onConflict:'material_id,ubicacion'}
+  );
+  if(error){toast('Error: '+error.message,'er');return}
+  toast('Inventario ajustado','ok');closeModal();vInventario();
+}
+
+// ─── DESPACHOS ────────────────────────────────────────────
+let _desps=[];
+
+async function vDespachos(){
+  let q=sb.from('despachos')
+    .select('*,cp:profiles!despachos_creado_por_fkey(nombre)')
+    .order('created_at',{ascending:false});
+  if(cProf.rol!=='bodega')q=q.eq('destino',eRol());
+  const {data}=await q;
+  _desps=data||[];
+
+  $('main').innerHTML=`
+  <div class="pha">
+    <div class="ph"><h2>📋 Pedidos</h2><p>${cProf.rol==='bodega'?'Pedidos recibidos de los puntos de venta':'Mis pedidos a bodega'}</p></div>
+  </div>
+  <div class="fb">
+    <input id="fSearch" placeholder="🔍 Buscar número..." oninput="filterDesps()" style="flex:1;min-width:180px">
+    <select id="fEst" onchange="filterDesps()">
+      <option value="">Todos los estados</option>
+      <option value="pendiente">Pendiente</option>
+      <option value="en_transito">En camino</option>
+      <option value="recibido">Recibido</option>
+      <option value="anulado">Anulado</option>
+    </select>
+  </div>
+  <div class="card"><div class="tw" id="dTW">${despsTable(_desps)}</div></div>`;
+}
+
+function filterDesps(){
+  const s=$('fSearch').value.toLowerCase(),e=$('fEst').value;
+  const f=_desps.filter(d=>(!s||d.numero.toLowerCase().includes(s))&&(!e||d.estado===e));
+  $('dTW').innerHTML=despsTable(f);
+}
+
+function despsTable(list){
+  if(!list.length)return emptyState('📭','Sin pedidos','Cuando hagas un pedido aparecerá aquí');
+  return `<table>
+    <thead><tr><th>Número</th><th>Punto de Venta</th><th>Estado</th><th>Fecha</th><th>Solicitado por</th><th>Acciones</th></tr></thead>
+    <tbody>${list.map(d=>`<tr>
+      <td><strong>${esc(d.numero)}</strong></td>
+      <td>${lPill(d.destino)}</td>
+      <td>${stBadge(d.estado)}</td>
+      <td>${fDate(d.created_at)}</td>
+      <td>${esc(d.cp?.nombre||'-')}</td>
+      <td style="white-space:nowrap">
+        <button class="btn bg bsm" onclick="viewDesp('${d.id}')">👁</button>
+        ${d.estado==='pendiente'&&cProf.rol==='bodega'?`
+          <button class="btn bs bsm" onclick="openProcesar('${d.id}')">📦 Despachar</button>
+          <button class="btn ber bsm" onclick="anular('${d.id}')">🚫</button>`:''}
+        ${d.estado==='pendiente'&&d.destino===eRol()?`
+          <button class="btn ber bsm" onclick="anular('${d.id}')">✕ Cancelar</button>`:''}
+        ${d.estado==='en_transito'&&d.destino===eRol()?`
+          <button class="btn bok bsm" onclick="openRecibir('${d.id}')">✅ Recibí</button>`:''}
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+async function viewDesp(id){
+  const {data:d}=await sb.from('despachos')
+    .select('*,cp:profiles!despachos_creado_por_fkey(nombre),rp:profiles!despachos_recibido_por_fkey(nombre)')
+    .eq('id',id).single();
+  const {data:its}=await sb.from('despacho_items')
+    .select('*,m:materiales(nombre,unidad)').eq('despacho_id',id);
+
+  openModal(`<div class="md mdl">
+    <div class="mh"><h3>Despacho ${esc(d.numero)}</h3><button class="mc" onclick="closeModal()">×</button></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+      <div>
+        <div class="dr"><span class="dlb">Número</span><span class="dvl">${esc(d.numero)}</span></div>
+        <div class="dr"><span class="dlb">Estado</span><span class="dvl">${stBadge(d.estado)}</span></div>
+        <div class="dr"><span class="dlb">Origen</span><span class="dvl">${lPill(d.origen)}</span></div>
+        <div class="dr"><span class="dlb">Destino</span><span class="dvl">${lPill(d.destino)}</span></div>
+      </div>
+      <div>
+        <div class="dr"><span class="dlb">Creado por</span><span class="dvl">${esc(d.cp?.nombre||'-')}</span></div>
+        <div class="dr"><span class="dlb">F. Despacho</span><span class="dvl">${fDate(d.fecha_despacho)}</span></div>
+        <div class="dr"><span class="dlb">Recibido por</span><span class="dvl">${esc(d.rp?.nombre||'-')}</span></div>
+        <div class="dr"><span class="dlb">F. Recepción</span><span class="dvl">${d.fecha_recepcion?fDate(d.fecha_recepcion):'-'}</span></div>
+      </div>
+    </div>
+    ${d.notas?`<div class="alert ai" style="margin-bottom:14px">📝 ${esc(d.notas)}</div>`:''}
+    <table class="it">
+      <thead><tr><th>Material</th><th>Unidad</th><th style="text-align:right">Pedido</th><th style="text-align:right">Enviado</th><th style="text-align:right">Recibido</th></tr></thead>
+      <tbody>${(its||[]).map(i=>{
+        const sol=parseFloat(i.cantidad_solicitada||0);
+        const env=parseFloat(i.cantidad_despachada||0);
+        const rec=i.cantidad_recibida!=null?parseFloat(i.cantidad_recibida):null;
+        const diffEnv=env<sol;
+        const diffRec=rec!=null&&rec<env;
+        return `<tr>
+          <td>${esc(i.m?.nombre||'-')}</td><td>${esc(i.m?.unidad||'-')}</td>
+          <td style="text-align:right;color:var(--txl)">${sol.toFixed(2)}</td>
+          <td style="text-align:right;font-weight:600;color:${diffEnv?'var(--wa)':'var(--tx)'}">${env.toFixed(2)}${diffEnv?` <span title="Menos de lo pedido" style="font-size:10px">⚠️</span>`:''}</td>
+          <td style="text-align:right;font-weight:600;color:${rec==null?'var(--txl)':diffRec?'var(--wa)':'var(--ok)'}">${rec!=null?rec.toFixed(2):'-'}${diffRec?` <span title="Menos de lo enviado" style="font-size:10px">⚠️</span>`:''}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+    <div class="mf"><button class="btn bg" onclick="closeModal()">Cerrar</button></div>
+  </div>`);
+}
+
+let _procItems=[];
+async function openProcesar(id){
+  const {data:d}=await sb.from('despachos').select('*,cp:profiles!despachos_creado_por_fkey(nombre)').eq('id',id).single();
+  const {data:its}=await sb.from('despacho_items').select('*,m:materiales(nombre,unidad)').eq('despacho_id',id);
+  _procItems=its||[];
+
+  const matIds=_procItems.map(i=>i.material_id);
+
+  // Stock bodega y último despacho de cada material a esta misma sucursal en paralelo
+  const [{data:stocks},{data:historial}]=await Promise.all([
+    sb.from('inventario').select('material_id,cantidad').eq('ubicacion','bodega').in('material_id',matIds),
+    sb.from('despacho_items')
+      .select('material_id,cantidad_despachada,d:despachos(numero,destino,fecha_despacho,estado)')
+      .in('material_id',matIds)
+      .neq('despacho_id',id)
+      .order('created_at',{ascending:false})
+  ]);
+
+  const stockMap={};
+  (stocks||[]).forEach(s=>{stockMap[s.material_id]=parseFloat(s.cantidad)||0});
+
+  // Para cada material, el último despacho efectivo a esta misma sucursal
+  const ultimoMap={};
+  for(const h of historial||[]){
+    if(!h.d||h.d.estado==='anulado'||h.d.estado==='pendiente')continue;
+    if(h.d.destino!==d.destino)continue;
+    if(!ultimoMap[h.material_id])ultimoMap[h.material_id]=h;
+  }
+
+  openModal(`<div class="md mdl">
+    <div class="mh"><h3>📦 Despachar Pedido ${esc(d.numero)}</h3><button class="mc" onclick="closeModal()">×</button></div>
+    <p style="font-size:12px;color:var(--txl);margin-bottom:14px">Solicitado por <strong>${esc(d.cp?.nombre||'-')}</strong> · ${esc(rLab(d.destino))}</p>
+    <table class="it" style="margin-bottom:14px">
+      <thead><tr><th>Material</th><th style="text-align:right">Solicitado</th><th style="text-align:right">Stock</th><th>A enviar</th></tr></thead>
+      <tbody>${_procItems.map((i,idx)=>{
+        const sol=parseFloat(i.cantidad_solicitada||i.cantidad_despachada||0);
+        const stk=stockMap[i.material_id]||0;
+        const def=Math.min(sol,stk).toFixed(2);
+        const ult=ultimoMap[i.material_id];
+        const ultTxt=ult
+          ? `📅 Último envío: <strong>${parseFloat(ult.cantidad_despachada).toFixed(2)} ${esc(i.m?.unidad||'')}</strong> el ${fDate(ult.d.fecha_despacho)} (${esc(ult.d.numero)})`
+          : `<span style="color:var(--txl)">Sin envíos anteriores a ${esc(rLab(d.destino))}</span>`;
+        return `<tr>
+          <td>
+            <div style="font-weight:600">${esc(i.m?.nombre||'-')}</div>
+            <div style="font-size:11px;color:var(--inf);margin-top:3px">${ultTxt}</div>
+          </td>
+          <td style="text-align:right;font-weight:600">${sol.toFixed(2)}<div style="font-size:10px;color:var(--txl)">${esc(i.m?.unidad||'')}</div></td>
+          <td style="text-align:right;color:${stk<sol?'var(--er)':'var(--ok)'}">
+            ${stk.toFixed(2)}<div style="font-size:10px;color:var(--txl)">${esc(i.m?.unidad||'')}</div>
+          </td>
+          <td><input type="number" id="pr_${idx}" value="${def}" min="0" step="0.01" style="width:75px"></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+    <div class="mf">
+      <button class="btn bg" onclick="closeModal()">Cancelar</button>
+      <button class="btn bp" onclick="confirmarDespacho('${id}')">🚚 Confirmar envío</button>
+    </div>
+  </div>`);
+}
+
+async function confirmarDespacho(despId){
+  for(const [idx,i] of _procItems.entries()){
+    const qty=parseFloat($('pr_'+idx).value)||0;
+    await sb.from('despacho_items').update({cantidad_despachada:qty}).eq('id',i.id);
+    if(qty>0)await adjInv('bodega',i.material_id,-qty);
+  }
+  const {error}=await sb.from('despachos').update({estado:'en_transito',fecha_despacho:new Date().toISOString()}).eq('id',despId);
+  if(error){toast('Error: '+error.message,'er');return}
+  toast('Pedido despachado — en camino','ok');closeModal();vDespachos();
+}
+
+async function anular(id){
+  if(!confirm('¿Anular despacho? Se restaurará el inventario si fue descontado.'))return;
+  const {data:d}=await sb.from('despachos').select('*').eq('id',id).single();
+  const {data:its}=await sb.from('despacho_items').select('*').eq('despacho_id',id);
+  await sb.from('despachos').update({estado:'anulado'}).eq('id',id);
+  if(d.estado==='en_transito'){
+    for(const i of its||[])await adjInv(d.origen,i.material_id,parseFloat(i.cantidad_despachada));
+  }
+  toast('Despacho anulado','ok');vDespachos();
+}
+
+let _recvItems=[];
+async function openRecibir(id){
+  const {data:d}=await sb.from('despachos').select('*').eq('id',id).single();
+  const {data:its}=await sb.from('despacho_items').select('*,m:materiales(nombre,unidad)').eq('despacho_id',id);
+  _recvItems=its||[];
+
+  openModal(`<div class="md mdl">
+    <div class="mh"><h3>✅ Confirmar recepción ${esc(d.numero)}</h3><button class="mc" onclick="closeModal()">×</button></div>
+    <p style="margin-bottom:14px;color:var(--txl);font-size:12px">Marcá lo que realmente recibiste de cada ítem.</p>
+    <table class="it" style="margin-bottom:14px">
+      <thead><tr><th>Material</th><th>Unidad</th><th style="text-align:right">Pedido</th><th style="text-align:right">Enviado</th><th>Recibido</th></tr></thead>
+      <tbody>${_recvItems.map(i=>{
+        const sol=parseFloat(i.cantidad_solicitada||i.cantidad_despachada||0);
+        const env=parseFloat(i.cantidad_despachada||0);
+        return `<tr>
+          <td>${esc(i.m?.nombre||'-')}</td><td>${esc(i.m?.unidad||'-')}</td>
+          <td style="text-align:right;color:var(--txl)">${sol.toFixed(2)}</td>
+          <td style="text-align:right;font-weight:600">${env.toFixed(2)}</td>
+          <td><input type="number" id="rv_${i.id}" value="${env.toFixed(2)}" min="0" step="0.01" style="width:80px"></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+    <div class="fg"><label>Notas (opcional)</label><textarea id="rvNot" placeholder="¿Faltó algo? Anotalo aquí..."></textarea></div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeModal()">Cancelar</button>
+      <button class="btn bok" onclick="confirmRecep('${id}','${d.destino}')">✅ Confirmar recepción</button>
+    </div>
+  </div>`);
+}
+
+async function confirmRecep(despId,destino){
+  const notas=$('rvNot').value.trim();
+  for(const i of _recvItems){
+    const qty=parseFloat($('rv_'+i.id).value)||0;
+    await sb.from('despacho_items').update({cantidad_recibida:qty}).eq('id',i.id);
+    await adjInv(destino,i.material_id,qty);
+  }
+  const {error}=await sb.from('despachos').update({
+    estado:'recibido',recibido_por:cUser.id,
+    fecha_recepcion:new Date().toISOString(),notas:notas||null
+  }).eq('id',despId);
+  if(error){toast('Error: '+error.message,'er');return}
+  toast('Recepción confirmada','ok');closeModal();vDespachos();
+}
+
+async function adjInv(ubicacion,material_id,delta){
+  const {data:cur}=await sb.from('inventario').select('cantidad')
+    .eq('ubicacion',ubicacion).eq('material_id',material_id).single();
+  const nq=Math.max(0,(parseFloat(cur?.cantidad)||0)+delta);
+  await sb.from('inventario').upsert(
+    {material_id,ubicacion,cantidad:nq,updated_at:new Date().toISOString()},
+    {onConflict:'material_id,ubicacion'}
+  );
+}
+
+// ─── NUEVO DESPACHO ───────────────────────────────────────
+let _despItems=[],_mats4d=[];
+
+async function vNuevo(){
+  _despItems=[];
+  const {data:mats}=await sb.from('materiales')
+    .select('*,inv:inventario(cantidad,ubicacion)')
+    .eq('activo',true).order('nombre');
+
+  _mats4d=(mats||[]).map(m=>({
+    ...m,
+    stockMio:(m.inv||[]).find(i=>i.ubicacion===eRol())?.cantidad||0
+  }));
+
+  $('main').innerHTML=`
+  <div class="ph"><h2>➕ Nuevo Pedido</h2><p>Solicitá materiales a bodega · ${esc(rLab(eRol()))}</p></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="ct">📋 Agregar materiales</div>
+        <div style="display:flex;gap:7px;margin-bottom:10px">
+          <select id="dMatSel" onkeydown="if(event.key==='Enter'){event.preventDefault();$('dCant').focus()}" style="flex:1;padding:8px;border:1px solid var(--br);border-radius:8px;font-size:13px">
+            <option value="">Seleccionar material...</option>
+            ${_mats4d.map(m=>`<option value="${m.id}">${esc(m.nombre)} (${esc(m.unidad)})</option>`).join('')}
+          </select>
+          <input id="dCant" type="number" min="0.01" step="0.01" placeholder="Cant." onkeydown="if(event.key==='Enter'){event.preventDefault();addItem()}" style="width:85px;padding:8px;border:1px solid var(--br);border-radius:8px;font-size:13px">
+          <button class="btn bp bsm" onclick="addItem()">+</button>
+        </div>
+        <div id="dItemsL"><div class="es" style="padding:16px"><p style="font-size:12px">Sin materiales aún</p></div></div>
+        <div class="fg" style="margin-top:12px"><label>Notas para bodega</label><textarea id="dNot" placeholder="Indicaciones especiales..."></textarea></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="ct">📊 Resumen del pedido</div>
+        <div id="dSum"><p style="color:var(--txl);font-size:12px">Agregá materiales para ver el resumen…</p></div>
+        <div style="margin-top:14px">
+          <button class="btn bp bfull" id="btnCr" onclick="crearDespacho()">📋 Enviar Pedido a Bodega</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ct">📦 Mi stock actual</div>
+        ${_mats4d.map(m=>`
+          <div class="ii">
+            <div><div class="iin">${esc(m.nombre)}</div><div class="iiu">${esc(m.unidad)}</div></div>
+            <div class="iq">${parseFloat(m.stockMio).toFixed(2)}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function addItem(){
+  const matId=$('dMatSel').value,cant=parseFloat($('dCant').value);
+  if(!matId){toast('Selecciona material','er');return}
+  if(!cant||cant<=0){toast('Cantidad inválida','er');return}
+  const m=_mats4d.find(x=>x.id===matId);if(!m)return;
+  const ex=_despItems.find(x=>x.material_id===matId);
+  if(ex)ex.cantidad+=cant;
+  else _despItems.push({material_id:matId,nombre:m.nombre,unidad:m.unidad,cantidad:cant});
+  $('dCant').value='';
+  redrawItems();
+}
+
+function remItem(i){_despItems.splice(i,1);redrawItems()}
+function updItemQty(i,v){const q=parseFloat(v);if(!isNaN(q)&&q>0){_despItems[i].cantidad=q;redrawItems()}}
+
+function redrawItems(){
+  const l=$('dItemsL'),s=$('dSum');
+  if(!_despItems.length){
+    l.innerHTML=`<div class="es" style="padding:16px"><p style="font-size:12px">Sin materiales</p></div>`;
+    s.innerHTML=`<p style="color:var(--txl);font-size:12px">Agrega materiales…</p>`;
+    return;
+  }
+  l.innerHTML=`<table class="it"><thead><tr><th>Material</th><th>Cant.</th><th>Ud.</th><th></th></tr></thead><tbody>
+    ${_despItems.map((it,i)=>`<tr>
+      <td>${esc(it.nombre)}</td>
+      <td><input type="number" value="${it.cantidad}" min="0.01" step="0.01" onchange="updItemQty(${i},this.value)" style="width:75px"></td>
+      <td>${esc(it.unidad)}</td>
+      <td><button class="btn ber bsm" onclick="remItem(${i})">×</button></td>
+    </tr>`).join('')}
+  </tbody></table>`;
+  s.innerHTML=`<div style="margin-bottom:8px"><strong>${_despItems.length}</strong> materiales</div>`+
+    _despItems.map(it=>`<div class="dr"><span class="dlb">${esc(it.nombre)}</span><span class="dvl">${it.cantidad.toFixed(2)} ${esc(it.unidad)}</span></div>`).join('');
+}
+
+async function crearDespacho(){
+  const notas=$('dNot').value.trim();
+  if(!_despItems.length){toast('Agrega al menos un material','er');return}
+  const btn=$('btnCr');btn.disabled=true;btn.textContent='Enviando...';
+  const numero='PED-'+Date.now().toString().slice(-8);
+  const {data:desp,error:e1}=await sb.from('despachos').insert({
+    numero,origen:'bodega',destino:eRol(),estado:'pendiente',
+    creado_por:cUser.id,notas:notas||null
+  }).select().single();
+  if(e1){toast('Error: '+e1.message,'er');btn.disabled=false;btn.textContent='📋 Enviar Pedido a Bodega';return}
+  const {error:e2}=await sb.from('despacho_items').insert(
+    _despItems.map(it=>({despacho_id:desp.id,material_id:it.material_id,cantidad_solicitada:it.cantidad,cantidad_despachada:0}))
+  );
+  if(e2){toast('Error ítems: '+e2.message,'er');btn.disabled=false;btn.textContent='📋 Enviar Pedido a Bodega';return}
+  toast(`Pedido ${numero} enviado a bodega`,'ok');
+  nav('despachos');
+}
+
+// ─── HELPERS ─────────────────────────────────────────────
+function stBadge(e){
+  const m={pendiente:['bp2','⏳ Pendiente'],en_transito:['bt','🚚 En tránsito'],recibido:['br2','✅ Recibido'],anulado:['ba','🚫 Anulado']};
+  const [c,l]=m[e]||['',''];return `<span class="badge ${c}">${l}</span>`;
+}
+function fDate(s){if(!s)return '-';return new Date(s).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+function emptyState(ic,title,sub=''){return `<div class="es"><div class="ic">${ic}</div><h3>${esc(title)}</h3>${sub?`<p style="font-size:13px">${esc(sub)}</p>`:''}</div>`}
+
+// ─── REPORTE / HISTORIAL ──────────────────────────────────
+async function vReporte(){
+  $('main').innerHTML=`
+    <div class="ph"><h2>📈 Historial</h2><p>Control de despachos y consumo por sucursal</p></div>
+    <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--br)">
+      <button id="tab-resumen" class="btn bg" onclick="switchTab('resumen')" style="border-radius:8px 8px 0 0;border-bottom:none;padding:9px 20px">📋 Por Pedido</button>
+      <button id="tab-material" class="btn bg" onclick="switchTab('material')" style="border-radius:8px 8px 0 0;border-bottom:none;padding:9px 20px;margin-left:4px">📦 Por Material</button>
+    </div>
+    <div id="rContenido"><div class="ld"><div class="sp"></div></div></div>`;
+  switchTab('resumen');
+}
+
+let _tabActiva='resumen';
+function switchTab(tab){
+  _tabActiva=tab;
+  ['resumen','material'].forEach(t=>{
+    const btn=$('tab-'+t);
+    if(!btn)return;
+    btn.style.background=t===tab?'var(--p)':'transparent';
+    btn.style.color=t===tab?'#fff':'var(--tx)';
+    btn.style.fontWeight=t===tab?'700':'400';
+  });
+  if(tab==='resumen') renderTabResumen();
+  else renderTabMaterial();
+}
+
+function renderTabResumen(){
+  const el=$('rContenido');
+  el.innerHTML=`
+    <div class="fb" style="margin-bottom:16px">
+      <select id="rFiltSuc" onchange="cargarReporte()">
+        <option value="">Todas las sucursales</option>
+        <option value="punto_venta_1">Punto de Venta 1</option>
+        <option value="punto_venta_2">Punto de Venta 2</option>
+        <option value="taller">Taller</option>
+      </select>
+      <select id="rFiltEst" onchange="cargarReporte()">
+        <option value="">Todos los estados</option>
+        <option value="recibido">Recibidos</option>
+        <option value="en_transito">En camino</option>
+        <option value="pendiente">Pendientes</option>
+        <option value="anulado">Anulados</option>
+      </select>
+      <input id="rFiltDesde" type="date" onchange="cargarReporte()" title="Desde">
+      <input id="rFiltHasta" type="date" onchange="cargarReporte()" title="Hasta">
+    </div>
+    <div id="rTabla"><div class="ld"><div class="sp"></div></div></div>`;
+  cargarReporte();
+}
+
+function renderTabMaterial(){
+  const el=$('rContenido');
+  el.innerHTML=`
+    <div class="fb" style="margin-bottom:16px">
+      <select id="mFiltSuc" onchange="cargarPorMaterial()">
+        <option value="">Todas las sucursales</option>
+        <option value="punto_venta_1">Punto de Venta 1</option>
+        <option value="punto_venta_2">Punto de Venta 2</option>
+        <option value="taller">Taller</option>
+      </select>
+      <input id="mFiltMat" type="text" placeholder="🔍 Buscar material..." oninput="cargarPorMaterial()" style="flex:1;min-width:160px">
+    </div>
+    <div id="mTabla"><div class="ld"><div class="sp"></div></div></div>`;
+  cargarPorMaterial();
+}
+
+async function cargarReporte(){
+  const suc=$('rFiltSuc')?.value||'';
+  const est=$('rFiltEst')?.value||'';
+  const desde=$('rFiltDesde')?.value||'';
+  const hasta=$('rFiltHasta')?.value||'';
+  const el=$('rTabla');
+  if(!el)return;
+  el.innerHTML=`<div class="ld"><div class="sp"></div></div>`;
+
+  let q=sb.from('despachos')
+    .select('*,cp:profiles!despachos_creado_por_fkey(nombre),items:despacho_items(*,m:materiales(nombre,unidad))')
+    .order('created_at',{ascending:false});
+  if(suc)q=q.eq('destino',suc);
+  if(est)q=q.eq('estado',est);
+  if(desde)q=q.gte('created_at',desde);
+  if(hasta)q=q.lte('created_at',hasta+'T23:59:59');
+
+  const {data:desps,error}=await q;
+  if(error){el.innerHTML=`<div class="alert ae">${esc(error.message)}</div>`;return}
+  if(!desps||!desps.length){el.innerHTML=emptyState('📭','Sin registros','Ajustá los filtros para ver resultados');return}
+
+  const filasPed=desps.map(d=>`
+    <tr>
+      <td><strong>${esc(d.numero)}</strong></td>
+      <td>${lPill(d.destino)}</td>
+      <td>${stBadge(d.estado)}</td>
+      <td>${fDate(d.created_at)}</td>
+      <td>${esc(d.cp?.nombre||'-')}</td>
+      <td style="text-align:right">${(d.items||[]).reduce((s,i)=>s+parseFloat(i.cantidad_solicitada||0),0).toFixed(2)}</td>
+      <td style="text-align:right">${(d.items||[]).reduce((s,i)=>s+parseFloat(i.cantidad_despachada||0),0).toFixed(2)}</td>
+      <td><button class="btn bg bsm" onclick="viewDesp('${d.id}')">👁 Ver</button></td>
+    </tr>`).join('');
+
+  el.innerHTML=`
+    <div class="sg" style="margin-bottom:20px">
+      <div class="sc"><div class="si b">📋</div><div><div class="sv">${desps.length}</div><div class="sl">Total pedidos</div></div></div>
+      <div class="sc"><div class="si g">✅</div><div><div class="sv">${desps.filter(d=>d.estado==='recibido').length}</div><div class="sl">Recibidos</div></div></div>
+      <div class="sc"><div class="si o">🚚</div><div><div class="sv">${desps.filter(d=>d.estado==='en_transito').length}</div><div class="sl">En camino</div></div></div>
+      <div class="sc"><div class="si r">⏳</div><div><div class="sv">${desps.filter(d=>d.estado==='pendiente').length}</div><div class="sl">Pendientes</div></div></div>
+    </div>
+    <div class="card">
+      <div class="ct">📋 Pedidos</div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Número</th><th>Sucursal</th><th>Estado</th><th>Fecha</th><th>Solicitado por</th><th style="text-align:right">Pedido</th><th style="text-align:right">Enviado</th><th></th></tr></thead>
+          <tbody>${filasPed}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+async function cargarPorMaterial(){
+  const suc=$('mFiltSuc')?.value||'';
+  const busq=($('mFiltMat')?.value||'').toLowerCase();
+  const el=$('mTabla');
+  if(!el)return;
+  el.innerHTML=`<div class="ld"><div class="sp"></div></div>`;
+
+  let q=sb.from('despacho_items')
+    .select('*,m:materiales(nombre,unidad),d:despachos(id,numero,destino,estado,created_at,fecha_despacho)')
+    .neq('d.estado','anulado')
+    .order('created_at',{ascending:false});
+
+  const {data:items,error}=await q;
+  if(error){el.innerHTML=`<div class="alert ae">${esc(error.message)}</div>`;return}
+  if(!items||!items.length){el.innerHTML=emptyState('📭','Sin datos','Aún no hay pedidos registrados');return}
+
+  // Filtrar por sucursal y búsqueda
+  const filtrados=items.filter(i=>{
+    if(!i.d||i.d.estado==='anulado')return false;
+    if(suc&&i.d.destino!==suc)return false;
+    if(busq&&!(i.m?.nombre||'').toLowerCase().includes(busq))return false;
+    return true;
+  });
+
+  if(!filtrados.length){el.innerHTML=emptyState('🔍','Sin resultados','Probá con otros filtros');return}
+
+  // Agrupar por material + sucursal
+  const grupos={};
+  for(const i of filtrados){
+    const key=i.material_id+'|'+(i.d?.destino||'');
+    if(!grupos[key]){
+      grupos[key]={
+        nombre:i.m?.nombre||'-',unidad:i.m?.unidad||'-',
+        sucursal:i.d?.destino||'-',
+        historial:[],totalSol:0,totalEnv:0
+      };
+    }
+    grupos[key].historial.push(i);
+    grupos[key].totalSol+=parseFloat(i.cantidad_solicitada||0);
+    grupos[key].totalEnv+=parseFloat(i.cantidad_despachada||0);
+  }
+
+  const lista=Object.values(grupos).sort((a,b)=>a.nombre.localeCompare(b.nombre)||a.sucursal.localeCompare(b.sucursal));
+
+  el.innerHTML=lista.map((g,gi)=>{
+    const ult=g.historial[0];
+    const ultFecha=ult?.d?.created_at?fDate(ult.d.created_at):'-';
+    const ultCant=parseFloat(ult?.cantidad_solicitada||0).toFixed(2);
+    return `
+    <div class="card" style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:4px 0" onclick="toggleHist('gh-${gi}')">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:15px;font-weight:700">${esc(g.nombre)}</span>
+          <span style="font-size:11px;color:var(--txl)">${esc(g.unidad)}</span>
+          ${lPill(g.sucursal)}
+        </div>
+        <div style="display:flex;gap:20px;align-items:center;font-size:12px">
+          <div style="text-align:right"><div style="color:var(--txl)">Último pedido</div><div style="font-weight:600">${ultFecha}</div></div>
+          <div style="text-align:right"><div style="color:var(--txl)">Últ. cantidad</div><div style="font-weight:600">${ultCant} ${esc(g.unidad)}</div></div>
+          <div style="text-align:right"><div style="color:var(--txl)">Total enviado</div><div style="font-weight:600;color:var(--p)">${g.totalEnv.toFixed(2)} ${esc(g.unidad)}</div></div>
+          <div style="text-align:right"><div style="color:var(--txl)"># Pedidos</div><div style="font-weight:600">${g.historial.length}</div></div>
+          <span style="color:var(--txl);font-size:16px" id="arr-${gi}">▶</span>
+        </div>
+      </div>
+      <div id="gh-${gi}" style="display:none;margin-top:12px;border-top:1px solid var(--br);padding-top:12px">
+        <table class="it">
+          <thead><tr><th>Pedido</th><th>Fecha</th><th style="text-align:right">Solicitado</th><th style="text-align:right">Enviado</th><th>Estado</th></tr></thead>
+          <tbody>${g.historial.map(i=>`<tr>
+            <td><a href="#" onclick="viewDesp('${i.d?.id}');return false" style="color:var(--p);text-decoration:none;font-weight:600">${esc(i.d?.numero||'-')}</a></td>
+            <td>${i.d?.created_at?fDate(i.d.created_at):'-'}</td>
+            <td style="text-align:right;font-weight:600">${parseFloat(i.cantidad_solicitada||0).toFixed(2)}</td>
+            <td style="text-align:right;color:var(--p);font-weight:600">${parseFloat(i.cantidad_despachada||0).toFixed(2)}</td>
+            <td>${stBadge(i.d?.estado||'-')}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleHist(id){
+  const el=$(id);if(!el)return;
+  const idx=id.replace('gh-','');
+  const arr=$('arr-'+idx);
+  const open=el.style.display==='none';
+  el.style.display=open?'':'none';
+  if(arr)arr.textContent=open?'▼':'▶';
+}
+
+// ─── USUARIOS ─────────────────────────────────────────────
+let _perfiles=[];
+
+async function vUsuarios(){
+  const {data:perfiles,error}=await sb.from('profiles').select('*').order('nombre');
+  _perfiles=perfiles||[];
+  let rows='';
+  if(error||!_perfiles.length){
+    rows=`<tr><td colspan="4" style="text-align:center;color:var(--txl);padding:30px">No hay usuarios registrados</td></tr>`;
+  } else {
+    rows=_perfiles.map((p,i)=>`
+      <tr>
+        <td><strong>${esc(p.nombre)}</strong>${p.id===cUser.id?'<span class="badge bt" style="margin-left:6px">Tú</span>':''}</td>
+        <td>${lPill(p.rol)}</td>
+        <td>
+          <span id="pwd-${i}" style="font-family:monospace;font-size:13px;letter-spacing:1px">••••••</span>
+          <button class="btn bg bsm" style="padding:3px 7px;margin-left:4px" onclick="togglePwd(${i})" title="Ver/ocultar clave">👁</button>
+        </td>
+        <td style="white-space:nowrap">
+          <button class="btn bs bsm" onclick="openEditarUsuario(${i})">✏️ Editar</button>
+          ${p.id!==cUser.id?`<button class="btn ber bsm" onclick="delUsuario('${p.id}','${esc(p.nombre)}')">🗑</button>`:''}
+        </td>
+      </tr>`).join('');
+  }
+  $('main').innerHTML=`
+    <div class="ph pha">
+      <div><h2>👥 Usuarios</h2><p>Gestión de usuarios del sistema</p></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn bs" onclick="openAsignarPerfil()">🔧 Recuperar usuario</button>
+        <button class="btn bp" onclick="openNuevoUsuario()">➕ Nuevo Usuario</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="tw">
+        <table>
+          <thead><tr>
+            <th>Nombre</th><th>Perfil</th><th>Contraseña</th><th>Acciones</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function togglePwd(i){
+  const p=_perfiles[i];
+  const el=$('pwd-'+i);
+  if(!el)return;
+  if(el.textContent==='••••••'){
+    el.textContent=p.clave||'(no guardada)';
+    el.style.color=p.clave?'var(--tx)':'var(--txl)';
+  } else {
+    el.textContent='••••••';
+    el.style.color='';
+  }
+}
+
+function openNuevoUsuario(){
+  openModal(`<div class="md">
+    <div class="mh"><h3>➕ Nuevo Usuario</h3><button class="mc" onclick="closeModal()">×</button></div>
+    <div id="nuErr"></div>
+    <div class="fg"><label>Nombre (para iniciar sesión)</label><input id="nuNombre" type="text" placeholder="Ej: maria, dependiente1"></div>
+    <div class="fg"><label>Contraseña</label><input id="nuPass" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div class="fg"><label>Perfil</label>
+      <select id="nuRol">
+        <option value="punto_venta_1">Punto de Venta 1 (Dependiente)</option>
+        <option value="punto_venta_2">Punto de Venta 2 (Dependiente)</option>
+        <option value="taller">Taller</option>
+        <option value="bodega">Bodega Central (Admin)</option>
+      </select>
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeModal()">Cancelar</button>
+      <button class="btn bp" id="btnCrearU" onclick="crearUsuario()">Crear Usuario</button>
+    </div>
+  </div>`);
+}
+
+async function crearUsuario(){
+  const nombre=$('nuNombre').value.trim();
+  const pass=$('nuPass').value;
+  const rol=$('nuRol').value;
+  if(!nombre||!pass){$('nuErr').innerHTML='<div class="alert ae">Completa todos los campos</div>';return}
+  if(pass.length<6){$('nuErr').innerHTML='<div class="alert ae">La contraseña debe tener al menos 6 caracteres</div>';return}
+  const btn=$('btnCrearU');btn.disabled=true;btn.textContent='Creando...';
+
+  const email=toEmail(nombre);
+  const sbTemp=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+  const {data,error}=await sbTemp.auth.signUp({email,password:pass});
+
+  if(error){
+    $('nuErr').innerHTML=`<div class="alert ae">${esc(error.message)}</div>`;
+    btn.disabled=false;btn.textContent='Crear Usuario';return;
+  }
+  const uid=data.user?.id;
+  if(!uid){
+    $('nuErr').innerHTML='<div class="alert ae">No se pudo obtener el ID del usuario. Verifica si el nombre ya existe.</div>';
+    btn.disabled=false;btn.textContent='Crear Usuario';return;
+  }
+  const {error:profErr}=await sb.from('profiles').upsert({id:uid,nombre,rol,clave:pass});
+  if(profErr){
+    $('nuErr').innerHTML=`<div class="alert ae">Usuario creado pero falló el perfil: ${esc(profErr.message)}</div>`;
+    btn.disabled=false;btn.textContent='Crear Usuario';return;
+  }
+  toast(`Usuario ${nombre} creado correctamente`,'ok');
+  closeModal();
+  nav('usuarios');
+}
+
+function openEditarUsuario(i){
+  const p=_perfiles[i];
+  openModal(`<div class="md">
+    <div class="mh"><h3>✏️ Editar Usuario</h3><button class="mc" onclick="closeModal()">×</button></div>
+    <div id="edErr"></div>
+    <input type="hidden" id="edId" value="${p.id}">
+    <input type="hidden" id="edIdx" value="${i}">
+    <div class="fg">
+      <label>Nombre de usuario</label>
+      <input id="edNombre" type="text" value="${esc(p.nombre)}" placeholder="Nombre para iniciar sesión">
+    </div>
+    <div class="fg">
+      <label>Nueva contraseña <span style="color:var(--txl);font-weight:400">(dejar vacío para no cambiar)</span></label>
+      <input id="edClave" type="text" value="" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="fg"><label>Perfil</label>
+      <select id="edRol">
+        <option value="punto_venta_1"${p.rol==='punto_venta_1'?' selected':''}>Punto de Venta 1 (Dependiente)</option>
+        <option value="punto_venta_2"${p.rol==='punto_venta_2'?' selected':''}>Punto de Venta 2 (Dependiente)</option>
+        <option value="taller"${p.rol==='taller'?' selected':''}>Taller</option>
+        <option value="bodega"${p.rol==='bodega'?' selected':''}>Bodega Central (Admin)</option>
+      </select>
+    </div>
+    ${!p.clave?`<div class="alert ai" style="font-size:12px">⚠️ Este usuario no tiene contraseña guardada. Solo se puede cambiar el perfil, no la contraseña o el nombre.</div>`:''}
+    <div class="mf">
+      <button class="btn bg" onclick="closeModal()">Cancelar</button>
+      <button class="btn bp" id="btnGuardarEd" onclick="guardarEdicion()">Guardar Cambios</button>
+    </div>
+  </div>`);
+}
+
+async function guardarEdicion(){
+  const id=$('edId').value;
+  const i=parseInt($('edIdx').value);
+  const p=_perfiles[i];
+  const newNombre=$('edNombre').value.trim();
+  const newClave=$('edClave').value;
+  const newRol=$('edRol').value;
+  if(!newNombre){$('edErr').innerHTML='<div class="alert ae">El nombre no puede estar vacío</div>';return}
+  if(newClave&&newClave.length<6){$('edErr').innerHTML='<div class="alert ae">La contraseña debe tener al menos 6 caracteres</div>';return}
+
+  const btn=$('btnGuardarEd');btn.disabled=true;btn.textContent='Guardando...';
+  const nombreCambio=newNombre!==p.nombre;
+  const claveCambio=newClave.length>=6;
+
+  if((nombreCambio||claveCambio)&&p.clave){
+    const sbTemp=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+    const {data:loginData,error:loginErr}=await sbTemp.auth.signInWithPassword({email:toEmail(p.nombre),password:p.clave});
+    if(loginErr||!loginData.user){
+      $('edErr').innerHTML='<div class="alert ae">No se pudo autenticar el usuario para aplicar cambios en auth</div>';
+      btn.disabled=false;btn.textContent='Guardar Cambios';return;
+    }
+    if(nombreCambio){
+      const {error:eErr}=await sbTemp.auth.updateUser({email:toEmail(newNombre)});
+      if(eErr){
+        $('edErr').innerHTML=`<div class="alert ae">Error al cambiar nombre: ${esc(eErr.message)}</div>`;
+        btn.disabled=false;btn.textContent='Guardar Cambios';return;
+      }
+    }
+    if(claveCambio){
+      const {error:pErr}=await sbTemp.auth.updateUser({password:newClave});
+      if(pErr){
+        $('edErr').innerHTML=`<div class="alert ae">Error al cambiar contraseña: ${esc(pErr.message)}</div>`;
+        btn.disabled=false;btn.textContent='Guardar Cambios';return;
+      }
+    }
+  }
+
+  const updates={nombre:newNombre,rol:newRol};
+  if(claveCambio)updates.clave=newClave;
+  const {error:profErr}=await sb.from('profiles').update(updates).eq('id',id);
+  if(profErr){
+    $('edErr').innerHTML=`<div class="alert ae">Error al actualizar perfil: ${esc(profErr.message)}</div>`;
+    btn.disabled=false;btn.textContent='Guardar Cambios';return;
+  }
+
+  // Si era el usuario actual, actualizar nombre en pantalla
+  if(id===cUser.id){
+    cProf.nombre=newNombre;cProf.rol=newRol;
+    $('uName').textContent=newNombre;
+    $('uAv').textContent=newNombre[0].toUpperCase();
+  }
+  toast(`Usuario ${newNombre} actualizado`,'ok');
+  closeModal();
+  nav('usuarios');
+}
+
+async function delUsuario(id,nombre){
+  if(!confirm(`¿Eliminar el usuario "${nombre}"? Esta acción no se puede deshacer.`))return;
+  await sb.from('profiles').delete().eq('id',id);
+  toast(`Usuario ${nombre} eliminado`,'ok');
+  nav('usuarios');
+}
+
+function openAsignarPerfil(){
+  openModal(`<div class="md">
+    <div class="mh"><h3>🔧 Recuperar usuario existente</h3><button class="mc" onclick="closeModal()">×</button></div>
+    <div id="apErr"></div>
+    <div class="alert ai" style="font-size:12px">Si creaste un usuario pero no aparece en la lista, ingresa su nombre, contraseña y perfil para asignarlo.</div>
+    <div class="fg"><label>Nombre del usuario</label><input id="apNombre" type="text" placeholder="Ej: maria, cris"></div>
+    <div class="fg"><label>Contraseña del usuario</label><input id="apPass" type="password" placeholder="La contraseña que le pusiste"></div>
+    <div class="fg"><label>Perfil</label>
+      <select id="apRol">
+        <option value="punto_venta_1">Punto de Venta 1 (Dependiente)</option>
+        <option value="punto_venta_2">Punto de Venta 2 (Dependiente)</option>
+        <option value="taller">Taller</option>
+        <option value="bodega">Bodega Central (Admin)</option>
+      </select>
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeModal()">Cancelar</button>
+      <button class="btn bs" id="btnAsignar" onclick="confirmarAsignarPerfil()">Asignar Perfil</button>
+    </div>
+  </div>`);
+}
+
+async function confirmarAsignarPerfil(){
+  const nombre=$('apNombre').value.trim();
+  const pass=$('apPass').value;
+  const rol=$('apRol').value;
+  if(!nombre||!pass){$('apErr').innerHTML='<div class="alert ae">Completa todos los campos</div>';return}
+  const btn=$('btnAsignar');btn.disabled=true;btn.textContent='Verificando...';
+
+  const sbTemp=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+  const {data,error}=await sbTemp.auth.signInWithPassword({email:toEmail(nombre),password:pass});
+  if(error||!data.user){
+    $('apErr').innerHTML=`<div class="alert ae">No se pudo verificar: nombre o contraseña incorrectos</div>`;
+    btn.disabled=false;btn.textContent='Asignar Perfil';return;
+  }
+  const {error:profErr}=await sb.from('profiles').upsert({id:data.user.id,nombre,rol,clave:pass});
+  if(profErr){
+    $('apErr').innerHTML=`<div class="alert ae">Error al guardar perfil: ${esc(profErr.message)}</div>`;
+    btn.disabled=false;btn.textContent='Asignar Perfil';return;
+  }
+  toast(`Perfil de ${nombre} asignado correctamente`,'ok');
+  closeModal();
+  nav('usuarios');
+}
+
+// ─── SQL SETUP ────────────────────────────────────────────
+const SQL=`-- ╔══════════════════════════════════════════════════╗
+-- ║  Chepito Control - Setup SQL (Supabase SQL Editor)    ║
+-- ╚══════════════════════════════════════════════════╝
+
+-- 1. Perfiles
+CREATE TABLE IF NOT EXISTS profiles (
+  id       UUID REFERENCES auth.users PRIMARY KEY,
+  nombre   TEXT NOT NULL,
+  rol      TEXT NOT NULL CHECK (rol IN ('bodega','punto_venta_1','punto_venta_2','taller')),
+  clave    TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+-- Si la tabla ya existe, agregar columna clave:
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS clave TEXT;
+
+-- 2. Catálogo de materiales
+CREATE TABLE IF NOT EXISTS materiales (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  nombre      TEXT NOT NULL,
+  unidad      TEXT NOT NULL,
+  descripcion TEXT,
+  activo      BOOLEAN DEFAULT TRUE,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. Inventario por ubicación
+CREATE TABLE IF NOT EXISTS inventario (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  material_id UUID REFERENCES materiales(id) ON DELETE CASCADE,
+  ubicacion   TEXT NOT NULL CHECK (ubicacion IN ('bodega','punto_venta_1','punto_venta_2','taller')),
+  cantidad    DECIMAL(10,2) DEFAULT 0,
+  updated_at  TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(material_id, ubicacion)
+);
+
+-- 4. Órdenes de despacho
+CREATE TABLE IF NOT EXISTS despachos (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  numero          TEXT UNIQUE NOT NULL,
+  origen          TEXT NOT NULL,
+  destino         TEXT NOT NULL,
+  estado          TEXT NOT NULL DEFAULT 'pendiente'
+                  CHECK (estado IN ('pendiente','en_transito','recibido','anulado')),
+  creado_por      UUID REFERENCES profiles(id),
+  recibido_por    UUID REFERENCES profiles(id),
+  fecha_despacho  TIMESTAMPTZ DEFAULT NOW(),
+  fecha_recepcion TIMESTAMPTZ,
+  notas           TEXT,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. Ítems de despacho
+CREATE TABLE IF NOT EXISTS despacho_items (
+  id                  UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  despacho_id         UUID REFERENCES despachos(id) ON DELETE CASCADE,
+  material_id         UUID REFERENCES materiales(id),
+  cantidad_solicitada DECIMAL(10,2) NOT NULL DEFAULT 0,
+  cantidad_despachada DECIMAL(10,2) NOT NULL DEFAULT 0,
+  cantidad_recibida   DECIMAL(10,2),
+  created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+-- Si la tabla ya existe, agregar columna:
+ALTER TABLE despacho_items ADD COLUMN IF NOT EXISTS cantidad_solicitada DECIMAL(10,2) NOT NULL DEFAULT 0;
+
+-- 6. Row Level Security
+ALTER TABLE profiles      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE materiales     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventario     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE despachos      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE despacho_items ENABLE ROW LEVEL SECURITY;
+
+-- Políticas: acceso total a usuarios autenticados
+CREATE POLICY "auth_all" ON profiles      FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all" ON materiales     FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all" ON inventario     FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all" ON despachos      FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all" ON despacho_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- 7. Datos de ejemplo (opcional)
+INSERT INTO materiales (nombre, unidad, descripcion) VALUES
+  ('Harina de trigo',   'kg',     'Para pan blanco'),
+  ('Harina integral',   'kg',     'Para pan integral'),
+  ('Azúcar',            'kg',     'Azúcar blanca'),
+  ('Sal',               'kg',     NULL),
+  ('Levadura seca',     'g',      NULL),
+  ('Mantequilla',       'kg',     NULL),
+  ('Huevos',            'unidad', NULL),
+  ('Leche en polvo',    'kg',     NULL),
+  ('Aceite vegetal',    'L',      NULL),
+  ('Azúcar glass',      'kg',     NULL)
+ON CONFLICT DO NOTHING;`;
+
+function showSQL(){
+  openModal(`<div class="md mdl">
+    <div class="mh"><h3>📋 Instrucciones SQL</h3><button class="mc" onclick="closeModal()">×</button></div>
+    <div class="alert ai">Ejecuta este SQL en <strong>SQL Editor</strong> de tu proyecto Supabase.</div>
+    <div class="sqlb">${SQL.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+    <div style="margin-top:10px;font-size:11px;color:var(--txl)">
+      Después crea usuarios en <strong>Authentication → Users</strong>. Al primer login la app pedirá el nombre y rol.
+    </div>
+    <div class="mf">
+      <button class="btn bp" onclick="copySQL()">📋 Copiar</button>
+      <button class="btn bg" onclick="closeModal()">Cerrar</button>
+    </div>
+  </div>`);
+}
+function copySQL(){navigator.clipboard.writeText(SQL).then(()=>toast('SQL copiado','ok'))}
+
+// ─── INIT ─────────────────────────────────────────────────
+async function init(){
+  initSB();
+  await sb.auth.signOut();
+  show('sLogin');
+  sb.auth.onAuthStateChange((ev,sess)=>{if(ev==='SIGNED_OUT'){hide('sApp');show('sLogin')}});
+}
+init();
+</script>
+</body>
+</html>
