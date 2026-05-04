@@ -28,6 +28,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);min-
 .bs{background:var(--s);color:#fff}.bs:hover{background:#d35400}
 .bok{background:var(--ok);color:#fff}.bok:hover{background:#219a52}
 .ber{background:var(--er);color:#fff}.ber:hover{background:#c0392b}
+.bw{background:#e67e22;color:#fff}.bw:hover{background:#ca6f1e}
 .bg{background:transparent;color:var(--tx);border:2px solid var(--br)}.bg:hover{border-color:var(--p);color:var(--p)}
 .bsm{padding:5px 10px;font-size:12px}
 .bfull{width:100%;justify-content:center}
@@ -668,6 +669,8 @@ function despsTable(list){
           <button class="btn ber bsm" onclick="anular('${d.id}')">✕ Cancelar</button>`:''}
         ${d.estado==='en_transito'&&d.destino===eRol()?`
           <button class="btn bok bsm" onclick="openRecibir('${d.id}')">✅ Recibí</button>`:''}
+        ${d.estado==='en_transito'&&cProf.rol==='bodega'?`
+          <button class="btn bw bsm" onclick="revertirDespacho('${d.id}')">↩ Revertir</button>`:''}
       </td>
     </tr>`).join('')}</tbody>
   </table>`;
@@ -788,6 +791,18 @@ async function confirmarDespacho(despId){
   const {error}=await sb.from('despachos').update({estado:'en_transito',fecha_despacho:new Date().toISOString()}).eq('id',despId);
   if(error){toast('Error: '+error.message,'er');return}
   toast('Pedido despachado — en camino','ok');closeModal();vDespachos();
+}
+
+async function revertirDespacho(id){
+  if(!confirm('¿Revertir el envío? El pedido volverá a pendiente y se restaurará el inventario de bodega.'))return;
+  const {data:its}=await sb.from('despacho_items').select('*').eq('despacho_id',id);
+  for(const i of its||[]){
+    if(parseFloat(i.cantidad_despachada)>0)await adjInv('bodega',i.material_id,parseFloat(i.cantidad_despachada));
+    await sb.from('despacho_items').update({cantidad_despachada:0}).eq('id',i.id);
+  }
+  const {error}=await sb.from('despachos').update({estado:'pendiente',fecha_despacho:null}).eq('id',id);
+  if(error){toast('Error: '+error.message,'er');return}
+  toast('Envío revertido — pedido vuelve a pendiente','ok');vDespachos();
 }
 
 async function anular(id){
