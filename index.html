@@ -14,7 +14,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);min-
 .auth-card{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .auth-logo{text-align:center;margin-bottom:28px}
 .auth-logo .ico{font-size:52px}
-.auth-logo h1{font-size:22px;color:var(--p);margin-top:8px}
+.auth-logo img.logo{width:120px;height:120px;object-fit:contain;margin-bottom:4px}
+.auth-logo h1{font-size:22px;color:var(--p);margin-top:4px}
 .auth-logo p{color:var(--txl);font-size:13px}
 /* FORMS */
 .fg{margin-bottom:14px}
@@ -209,7 +210,7 @@ tr:hover td{background:#fdf9f5}
 <div id="sConfig" style="display:none">
   <div class="auth-wrap">
     <div class="auth-card">
-      <div class="auth-logo"><div class="ico">🍞</div><h1>Chepito Control</h1><p>Sistema de Despacho de Materiales</p></div>
+      <div class="auth-logo"><img src="logo.png" alt="Chepito" class="logo"><h1>Chepito Control</h1><p>Sistema de Despacho de Materiales</p></div>
       <div class="alert ai">Ingresa los datos de tu proyecto Supabase para comenzar.</div>
       <div class="fg"><label>URL del proyecto Supabase</label><input id="cfgU" type="url" placeholder="https://xxxx.supabase.co"></div>
       <div class="fg"><label>Anon Key</label><input id="cfgK" type="text" placeholder="eyJhbGciOiJIUzI1NiIs..."></div>
@@ -225,7 +226,7 @@ tr:hover td{background:#fdf9f5}
 <div id="sLogin" style="display:none">
   <div class="auth-wrap">
     <div class="auth-card">
-      <div class="auth-logo"><div class="ico">🍞</div><h1>Chepito Control</h1><p>Sistema de Despacho de Materiales</p></div>
+      <div class="auth-logo"><img src="logo.png" alt="Chepito" class="logo"><h1>Chepito Control</h1><p>Sistema de Despacho de Materiales</p></div>
       <div id="loginErr"></div>
       <div class="fg"><label>Usuario</label><input id="lUser" type="text" placeholder="Ej: cris" onkeydown="if(event.key==='Enter'){event.preventDefault();$('lPass').focus()}" autocomplete="username"></div>
       <div class="fg"><label>Contraseña</label><input id="lPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter'){event.preventDefault();login()}" autocomplete="current-password"></div>
@@ -238,7 +239,7 @@ tr:hover td{background:#fdf9f5}
 <div id="sSelPunto" style="display:none">
   <div class="auth-wrap">
     <div class="auth-card">
-      <div class="auth-logo"><div class="ico">🍞</div><h1>Chepito Control</h1><p>Selección de turno</p></div>
+      <div class="auth-logo"><img src="logo.png" alt="Chepito" class="logo"><h1>Chepito Control</h1><p>Selección de turno</p></div>
       <p style="text-align:center;margin-bottom:22px;font-size:15px;font-weight:600;color:var(--tx)">¿En cuál punto de venta estás hoy?</p>
       <div style="display:flex;flex-direction:column;gap:12px">
         <button class="btn bs bfull" style="padding:20px;font-size:16px" onclick="elegirPunto('punto_venta_1')">🏪 Panadería 1</button>
@@ -254,7 +255,7 @@ tr:hover td{background:#fdf9f5}
 <div id="sApp" style="display:none">
   <!-- Header móvil (solo visible en pantallas pequeñas) -->
   <header class="mob-header">
-    <div class="mh-title">🍞 <span>Chepito Control</span></div>
+    <div class="mh-title"><img src="logo.png" alt="Chepito" style="width:32px;height:32px;object-fit:contain;border-radius:50%"> <span>Chepito Control</span></div>
     <div class="mh-user">
       <span id="mobUserName">Usuario</span>
       <button class="mh-out" onclick="logout()">Salir</button>
@@ -263,7 +264,7 @@ tr:hover td{background:#fdf9f5}
 
   <div class="app-wrap">
     <nav class="sidebar">
-      <div class="sb-head"><h2>🍞 Chepito Control</h2><p>Control de Despachos</p></div>
+      <div class="sb-head" style="display:flex;align-items:center;gap:10px"><img src="logo.png" alt="Chepito" style="width:40px;height:40px;object-fit:contain;border-radius:50%;flex-shrink:0"><div><h2>Chepito Control</h2><p>Control de Despachos</p></div></div>
       <div class="sb-user">
         <div class="uav" id="uAv">?</div>
         <div class="uinfo"><p id="uName">Usuario</p><span id="uRole">-</span></div>
