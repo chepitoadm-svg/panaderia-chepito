@@ -74,7 +74,7 @@ tr:hover td{background:#fdf9f5}
 /* BADGE */
 .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
 .bp2{background:#fef3e2;color:#e67e22}.bt{background:#eaf4fb;color:#3498db}
-.br2{background:#eafaf1;color:#27ae60}.ba{background:#fdedec;color:#e74c3c}
+.br2{background:#eafaf1;color:#27ae60}.ba{background:#fdedec;color:#e74c3c}.bri{background:#fff8e1;color:#e67e22}
 /* LOC PILL */
 .lp{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
 .lb{background:#fdecea;color:var(--p)}.l1{background:#fef3e2;color:var(--s)}.l2{background:#eaf4fb;color:var(--inf)}.lt{background:#f0e6ff;color:#8e44ad}
@@ -849,17 +849,21 @@ async function openRecibir(id){
 
 async function confirmRecep(despId,destino){
   const notas=$('rvNot').value.trim();
+  let incompleto=false;
   for(const i of _recvItems){
     const qty=parseFloat($('rv_'+i.id).value)||0;
+    const env=parseFloat(i.cantidad_despachada||0);
     await sb.from('despacho_items').update({cantidad_recibida:qty}).eq('id',i.id);
     await adjInv(destino,i.material_id,qty);
+    if(qty<env)incompleto=true;
   }
+  const estado=incompleto?'recibido_incompleto':'recibido';
   const {error}=await sb.from('despachos').update({
-    estado:'recibido',recibido_por:cUser.id,
+    estado,recibido_por:cUser.id,
     fecha_recepcion:new Date().toISOString(),notas:notas||null
   }).eq('id',despId);
   if(error){toast('Error: '+error.message,'er');return}
-  toast('Recepción confirmada','ok');closeModal();vDespachos();
+  toast(incompleto?'Recepción registrada con faltantes ⚠️':'Recepción confirmada ✅','ok');closeModal();vDespachos();
 }
 
 async function adjInv(ubicacion,material_id,delta){
@@ -978,7 +982,7 @@ async function crearDespacho(){
 
 // ─── HELPERS ─────────────────────────────────────────────
 function stBadge(e){
-  const m={pendiente:['bp2','⏳ Pendiente'],en_transito:['bt','🚚 En tránsito'],recibido:['br2','✅ Recibido'],anulado:['ba','🚫 Anulado']};
+  const m={pendiente:['bp2','⏳ Pendiente'],en_transito:['bt','🚚 En tránsito'],recibido:['br2','✅ Recibido'],recibido_incompleto:['bri','⚠️ Recibido/Incompleto'],anulado:['ba','🚫 Anulado']};
   const [c,l]=m[e]||['',''];return `<span class="badge ${c}">${l}</span>`;
 }
 function fDate(s){if(!s)return '-';return new Date(s).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}
@@ -1023,6 +1027,7 @@ function renderTabResumen(){
       <select id="rFiltEst" onchange="cargarReporte()">
         <option value="">Todos los estados</option>
         <option value="recibido">Recibidos</option>
+        <option value="recibido_incompleto">Recibidos con faltante</option>
         <option value="en_transito">En camino</option>
         <option value="pendiente">Pendientes</option>
         <option value="anulado">Anulados</option>
@@ -1087,6 +1092,7 @@ async function cargarReporte(){
     <div class="sg" style="margin-bottom:20px">
       <div class="sc"><div class="si b">📋</div><div><div class="sv">${desps.length}</div><div class="sl">Total pedidos</div></div></div>
       <div class="sc"><div class="si g">✅</div><div><div class="sv">${desps.filter(d=>d.estado==='recibido').length}</div><div class="sl">Recibidos</div></div></div>
+      <div class="sc"><div class="si o">⚠️</div><div><div class="sv">${desps.filter(d=>d.estado==='recibido_incompleto').length}</div><div class="sl">Con faltante</div></div></div>
       <div class="sc"><div class="si o">🚚</div><div><div class="sv">${desps.filter(d=>d.estado==='en_transito').length}</div><div class="sl">En camino</div></div></div>
       <div class="sc"><div class="si r">⏳</div><div><div class="sv">${desps.filter(d=>d.estado==='pendiente').length}</div><div class="sl">Pendientes</div></div></div>
     </div>
@@ -1167,14 +1173,23 @@ async function cargarPorMaterial(){
       </div>
       <div id="gh-${gi}" style="display:none;margin-top:12px;border-top:1px solid var(--br);padding-top:12px">
         <table class="it">
-          <thead><tr><th>Pedido</th><th>Fecha</th><th style="text-align:right">Solicitado</th><th style="text-align:right">Enviado</th><th>Estado</th></tr></thead>
-          <tbody>${g.historial.map(i=>`<tr>
-            <td><a href="#" onclick="viewDesp('${i.d?.id}');return false" style="color:var(--p);text-decoration:none;font-weight:600">${esc(i.d?.numero||'-')}</a></td>
-            <td>${i.d?.created_at?fDate(i.d.created_at):'-'}</td>
-            <td style="text-align:right;font-weight:600">${parseFloat(i.cantidad_solicitada||0).toFixed(2)}</td>
-            <td style="text-align:right;color:var(--p);font-weight:600">${parseFloat(i.cantidad_despachada||0).toFixed(2)}</td>
-            <td>${stBadge(i.d?.estado||'-')}</td>
-          </tr>`).join('')}</tbody>
+          <thead><tr><th>Pedido</th><th>Fecha</th><th style="text-align:right">Solicitado</th><th style="text-align:right">Enviado</th><th style="text-align:right">Recibido</th><th>Estado</th></tr></thead>
+          <tbody>${g.historial.map(i=>{
+            const env=parseFloat(i.cantidad_despachada||0);
+            const rec=i.cantidad_recibida!=null?parseFloat(i.cantidad_recibida):null;
+            const esIncompleto=i.d?.estado==='recibido_incompleto'&&rec!=null&&rec<env;
+            const recLabel=rec!=null
+              ?`<span style="color:${esIncompleto?'#e67e22':'var(--p)'};font-weight:600">${rec.toFixed(2)}${esIncompleto?' ⚠️':''}</span>`
+              :`<span style="color:var(--txl);font-size:11px">—</span>`;
+            return `<tr>
+              <td><a href="#" onclick="viewDesp('${i.d?.id}');return false" style="color:var(--p);text-decoration:none;font-weight:600">${esc(i.d?.numero||'-')}</a></td>
+              <td>${i.d?.created_at?fDate(i.d.created_at):'-'}</td>
+              <td style="text-align:right;font-weight:600">${parseFloat(i.cantidad_solicitada||0).toFixed(2)}</td>
+              <td style="text-align:right;color:var(--p);font-weight:600">${env.toFixed(2)}</td>
+              <td style="text-align:right">${recLabel}</td>
+              <td>${stBadge(i.d?.estado||'-')}</td>
+            </tr>`;
+          }).join('')}</tbody>
         </table>
       </div>
     </div>`;
@@ -1481,7 +1496,7 @@ CREATE TABLE IF NOT EXISTS despachos (
   origen          TEXT NOT NULL,
   destino         TEXT NOT NULL,
   estado          TEXT NOT NULL DEFAULT 'pendiente'
-                  CHECK (estado IN ('pendiente','en_transito','recibido','anulado')),
+                  CHECK (estado IN ('pendiente','en_transito','recibido','recibido_incompleto','anulado')),
   creado_por      UUID REFERENCES profiles(id),
   recibido_por    UUID REFERENCES profiles(id),
   fecha_despacho  TIMESTAMPTZ DEFAULT NOW(),
@@ -1502,6 +1517,11 @@ CREATE TABLE IF NOT EXISTS despacho_items (
 );
 -- Si la tabla ya existe, agregar columna:
 ALTER TABLE despacho_items ADD COLUMN IF NOT EXISTS cantidad_solicitada DECIMAL(10,2) NOT NULL DEFAULT 0;
+
+-- Si la tabla despachos ya existe, actualizar el CHECK para incluir 'recibido_incompleto':
+ALTER TABLE despachos DROP CONSTRAINT IF EXISTS despachos_estado_check;
+ALTER TABLE despachos ADD CONSTRAINT despachos_estado_check
+  CHECK (estado IN ('pendiente','en_transito','recibido','recibido_incompleto','anulado'));
 
 -- 6. Row Level Security
 ALTER TABLE profiles      ENABLE ROW LEVEL SECURITY;
